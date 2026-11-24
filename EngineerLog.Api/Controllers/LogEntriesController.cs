@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using EngineerLog.Api.Models;
 using EngineerLog.Api.Services;
 
@@ -6,6 +7,7 @@ namespace EngineerLog.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class LogEntriesController : ControllerBase
 {
     private readonly ILogEntryService _logEntryService;
@@ -15,28 +17,53 @@ public class LogEntriesController : ControllerBase
         _logEntryService = logEntryService;
     }
 
-    // GET: api/logentries/project/1
+// GET: api/logentries/project/1?categoryId=2&tagIds=1,3,5&search=ошибка
     [HttpGet("project/{projectId}")]
-    public async Task<ActionResult<List<LogEntry>>> GetByProject(int projectId)
+    public async Task<ActionResult<List<LogEntry>>> GetByProject(
+        int projectId, 
+        [FromQuery] int? categoryId = null,
+        [FromQuery] string? tagIds = null,
+        [FromQuery] string? search = null)
     {
-        var entries = await _logEntryService.GetLogEntriesByProjectIdAsync(projectId);
+        // Преобразуем строку tagIds "1,3,5" в List<int>
+        List<int>? tagIdList = null;
+        if (!string.IsNullOrWhiteSpace(tagIds))
+        {
+            tagIdList = tagIds.Split(',')
+                .Select(id => int.TryParse(id.Trim(), out var parsedId) ? parsedId : (int?)null)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToList();
+        }
+
+        var entries = await _logEntryService.GetLogEntriesByProjectIdAsync(
+            projectId, 
+            categoryId, 
+            tagIdList, 
+            search);
+            
         return Ok(entries);
     }
 
-    // POST: api/logentries
-    [HttpPost]
-    public async Task<ActionResult<LogEntry>> Create([FromBody] LogEntry newEntry)
-    {
-        try
-        {
-            var createdEntry = await _logEntryService.CreateLogEntryAsync(newEntry);
-            return CreatedAtAction(nameof(GetByProject), new { projectId = createdEntry.ProjectId }, createdEntry);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
+// POST: api/logentries
+       [HttpPost]
+       public async Task<IActionResult> Create([FromBody] EngineerLog.Api.DTOs.CreateLogEntryRequest request)
+       {
+           try
+           {
+               // Просто делегируем работу сервису
+               var createdEntry = await _logEntryService.CreateLogEntryAsync(request);
+               
+               // Возвращаем 201 Created с данными записи
+               return StatusCode(201, createdEntry);
+           }
+           catch (ArgumentException ex)
+           {
+               return BadRequest(new { message = ex.Message });
+           }
+       }
+
+
         // PUT: api/logentries/1
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] LogEntry updatedEntry)

@@ -9,4 +9,6 @@ public interface IProjectService
     Task<Project> CreateProjectAsync(Project project);
     Task<List<Project>> GetAllProjectsAsync();
     Task<Project?> GetProjectByIdAsync(int id);
+    Task<bool> DeleteProjectAsync(int id);
+    Task<Project> UpdateProjectAsync(int id, string name, string description);
 }

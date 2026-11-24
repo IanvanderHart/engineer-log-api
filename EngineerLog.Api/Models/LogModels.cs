@@ -22,7 +22,12 @@ public class LogEntry
     
     // Навигационное свойство обратно к проекту
     public Project? Project { get; set; } 
+	// Связь "Многие к одному" с категорией
+	public int? CategoryId { get; set; }  // Nullable, чтобы старые записи не сломались
+	public Category? Category { get; set; }
 
+	// Связь "Многие ко многим" с тэгами
+	public ICollection<Tag> Tags { get; set; } = new List<Tag>();
     public EntryType Type { get; set; } 
     
     public string Title { get; set; } = string.Empty;
@@ -33,6 +38,7 @@ public class LogEntry
     // DateTime.UtcNow гарантирует, что время будет в едином стандарте, без проблем с часовыми поясами.
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
+
 }
 
 // Enum (перечисление) делает код читаемым и защищает от некорректных строковых значений ("Event", "Problem")

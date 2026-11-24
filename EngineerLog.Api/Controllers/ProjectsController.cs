@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using EngineerLog.Api.Models;
 using EngineerLog.Api.Services;
 
@@ -6,6 +7,7 @@ namespace EngineerLog.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ProjectsController : ControllerBase
 {
     // Внедряем интерфейс сервиса, а не конкретный класс. 
@@ -55,4 +57,32 @@ public class ProjectsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-}
+
+    [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProject(int id)
+        {
+            var success = await _projectService.DeleteProjectAsync(id);
+            if (!success)
+            {
+                return NotFound(new { message = "Проект не найден" });
+            }
+            return NoContent();
+        }
+    
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProject(int id, [FromBody] UpdateProjectRequest request)
+        {
+            try
+            {
+                var updatedProject = await _projectService.UpdateProjectAsync(id, request.Name, request.Description);
+                return Ok(updatedProject);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { message = "Проект не найден" });
+            }
+        }
+    }
+    
+    // DTO для обновления (оставь это в самом низу файла, как у тебя и было)
+    public record UpdateProjectRequest(string Name, string Description);

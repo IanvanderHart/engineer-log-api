@@ -1,4 +1,11 @@
 #!/bin/bash
+# Загружаем переменные из файла .env
+if [ -f .env ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+else
+    echo "❌ Ошибка: Файл .env не найден! Создайте его на основе .env.example"
+    exit 1
+fi
 echo "🚀 Начинаем обновление EngineerLog API..."
 
 # 1. Обновляем код из GitHub (по SSH, без пароля, как мы настроили!)
@@ -16,10 +23,13 @@ docker rm my-engineerlog 2>/dev/null
 
 # 4. Запускаем новый контейнер
 echo "▶️ Запускаем новый контейнер..."
-docker run -d --name my-engineerlog --network host \
--e ASPNETCORE_HTTP_PORTS=8081 \
--e ConnectionStrings__DefaultConnection="Host=127.0.0.1;Port=5434;Database=EngineerLogDb;Username=engineerlog;Password=12345" \
-engineerlog-api
+sudo docker run -d --name my-engineerlog --network host \
+  -e ASPNETCORE_HTTP_PORTS=8081 \
+  -e ConnectionStrings__DefaultConnection="Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}" \
+  -e JwtSettings__SecretKey="${JWT_SECRET}" \
+  -e JwtSettings__Issuer="${JWT_ISSUER}" \
+  -e JwtSettings__Audience="${JWT_AUDIENCE}" \
+  engineerlog-api
 
 # 5. Проверяем, что всё работает
 echo "✅ Проверка работоспособности..."

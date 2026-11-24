@@ -46,4 +46,25 @@ public class ProjectService : IProjectService
             .Include(p => p.Entries) // А вот здесь подтянем записи, чтобы отдать их клиенту
             .FirstOrDefaultAsync(p => p.Id == id);
     }
+    public async Task<bool> DeleteProjectAsync(int id)
+        {
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null) return false;
+    
+            _context.Projects.Remove(project);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+    
+        public async Task<Project> UpdateProjectAsync(int id, string name, string description)
+        {
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null) throw new KeyNotFoundException("Проект не найден");
+    
+            project.Name = name;
+            project.Description = description;
+            
+            await _context.SaveChangesAsync();
+            return project;
+        }
 }
